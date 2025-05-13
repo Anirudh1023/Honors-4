@@ -1,73 +1,169 @@
-# Welcome to your Lovable project
 
-## Project info
 
-**URL**: https://lovable.dev/projects/1dd5a4d7-7ed9-40ab-9ed1-bfa91249deed
+---
 
-## How can I edit this code?
+````markdown
+# 🧠 Universal FastAPI Backend for ML Inference
 
-There are several ways of editing your application.
+A **plug-and-play backend template** using FastAPI that supports **multi-modal model inference** — with standardized input/output handling for seamless frontend integration.
 
-**Use Lovable**
+Built to work effortlessly with any ML model (e.g., summarization, text-to-speech, transcription), the only thing you need to change is the **core model logic**, while the rest of the backend remains constant.
 
-Simply visit the [Lovable Project](https://lovable.dev/projects/1dd5a4d7-7ed9-40ab-9ed1-bfa91249deed) and start prompting.
+---
 
-Changes made via Lovable will be committed automatically to this repo.
+## 🚀 Features
 
-**Use your preferred IDE**
+- ✅ Accepts multiple input types (text, audio)
+- ✅ Supports output as text (JSON) or audio (MPEG stream)
+- ✅ Minimal changes required for switching tasks
+- ✅ Fully compatible with a React + TypeScript frontend
+- ✅ Easily extensible and production-ready
 
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
+---
 
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
+## 📦 Installation
 
-Follow these steps:
-
-```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
-
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
-
-# Step 3: Install the necessary dependencies.
-npm i
-
-# Step 4: Start the development server with auto-reloading and an instant preview.
+```bash
+git clone <your-repo-url>
+cd <project-folder>
+npm install
 npm run dev
+````
+
+---
+
+## 🏁 Running the Server
+
+```bash
+uvicorn main:app --reload
 ```
 
-**Edit a file directly in GitHub**
+Server runs locally on:
+📍 `http://127.0.0.1:8000`
 
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
+---
 
-**Use GitHub Codespaces**
+## 🧰 API Endpoint
 
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
+### `POST /infer`
 
-## What technologies are used for this project?
+Send a multipart `FormData` request with:
 
-This project is built with:
+| Field         | Type     | Required | Description                   |
+| ------------- | -------- | -------- | ----------------------------- |
+| `input_name`  | `string` | optional | One or more text input fields |
+| `file_name`   | `file`   | optional | One or more audio file inputs |
+| `output_type` | `string` | yes      | Either `"text"` or `"audio"`  |
 
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
+---
 
-## How can I deploy this project?
+## 🔄 Standard Template (Do Not Modify)
 
-Simply open [Lovable](https://lovable.dev/projects/1dd5a4d7-7ed9-40ab-9ed1-bfa91249deed) and click on Share -> Publish.
+In `main.py`, the structure is fixed:
 
-## Can I connect a custom domain to my Lovable project?
+```python
+@app.post("/infer")
+async def infer(request: Request, output_type: str = Form(...)):
+    form = await request.form()
 
-Yes, you can!
+    input_data = {}
+    audio_inputs = {}
 
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
+    for key, value in form.multi_items():
+        if key == "output_type":
+            continue
+        if isinstance(value, UploadFile):
+            audio_inputs[key] = value
+        else:
+            input_data[key] = value
 
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/tips-tricks/custom-domain#step-by-step-guide)
+    # <<< CUSTOM LOGIC SECTION >>>
+```
+
+---
+
+## ✨ Examples
+
+### 📝 Summarization
+
+```python
+from transformers import pipeline
+summarizer = pipeline("summarization")
+summary = summarizer(input_data["text"], max_length=60)[0]["summary_text"]
+return JSONResponse(content={"text": summary})
+```
+
+---
+
+### 🔊 Text to Speech (TTS)
+
+```python
+from gtts import gTTS
+tts = gTTS(" ".join(input_data.values()))
+audio_fp = io.BytesIO()
+tts.write_to_fp(audio_fp)
+audio_fp.seek(0)
+return StreamingResponse(audio_fp, media_type="audio/mpeg")
+```
+
+---
+
+### 🎤 Whisper Transcription
+
+```python
+import whisper
+model = whisper.load_model("base")
+file = next(iter(audio_inputs.values()))
+with open("temp.wav", "wb") as f:
+    f.write(await file.read())
+result = model.transcribe("temp.wav")
+return JSONResponse(content={"text": result["text"]})
+```
+
+---
+
+## 🌐 Frontend Integration
+
+Use this backend with your React/TypeScript frontend that sends a `FormData` request like:
+
+```ts
+formData.append("text_input", "Hello World!");
+formData.append("output_type", "audio");
+```
+
+> ⚠️ Backend must be CORS-enabled when deployed for production use. If not local
+
+---
+
+## 📁 Example Folder Structure
+
+```
+project/
+│
+├── main.py                  # FastAPI backend
+├── requirements.txt         # Python dependencies
+└── README.md                # Project documentation
+```
+
+---
+
+## 📌 Future Improvements
+
+* Token-based authentication
+* S3 integration for output storage
+* Dockerize and deploy on Fly.io or Render
+* Real-time model inference stats/logs
+
+---
+
+## 👨‍💻 Author
+
+Built by [Anirudh @ IIIT Hyderabad](anirudh.bocha@students,iiit.ac.in)
+
+---
+
+## 📝 License
+
+MIT License. Use freely and modify as needed.
+
+---
